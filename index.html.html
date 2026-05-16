@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital@0;1&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8C97A;
+    --cream: #F5EDD8;
+    --dark: #0F0E0A;
+    --dark2: #1A1812;
+    --dark3: #252218;
+    --muted: #7A7060;
+    --accent: #8B5E3C;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark);
+    color: var(--cream);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Subtle noise texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* Ornamental top border */
+  .top-border {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--gold), var(--gold-light), var(--gold), transparent);
+    z-index: 100;
+  }
+
+  .bottom-border {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--gold), var(--gold-light), var(--gold), transparent);
+    z-index: 100;
+  }
+
+  /* Corner ornaments */
+  .corner {
+    position: fixed;
+    width: 60px; height: 60px;
+    z-index: 100;
+    opacity: 0.5;
+  }
+  .corner svg { width: 100%; height: 100%; }
+  .tl { top: 8px; left: 8px; }
+  .tr { top: 8px; right: 8px; transform: scaleX(-1); }
+  .bl { bottom: 8px; left: 8px; transform: scaleY(-1); }
+  .br { bottom: 8px; right: 8px; transform: scale(-1); }
+
+  /* Main layout */
+  .layout {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 0;
+    min-height: 100vh;
+    padding: 20px 24px 20px;
+  }
+
+  /* Bismillah header */
+  .bismillah {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 12px 0 8px;
+    animation: fadeDown 1s ease both;
+  }
+
+  .bismillah-text {
+    font-family: 'Amiri', serif;
+    font-size: 2.2rem;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-shadow: 0 0 30px rgba(201,168,76,0.3);
+    line-height: 1.2;
+  }
+
+  .bismillah-latin {
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* Divider */
+  .divider {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0 12px;
+    animation: fadeIn 1.2s ease both;
+  }
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.4;
+  }
+  .divider-diamond {
+    width: 6px; height: 6px;
+    background: var(--gold);
+    transform: rotate(45deg);
+    opacity: 0.6;
+  }
+
+  /* Clock block */
+  .clock-block {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 8px 0 4px;
+    animation: fadeUp 0.8s ease both;
+  }
+
+  .time-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 5.5rem;
+    font-weight: 300;
+    color: var(--cream);
+    letter-spacing: -2px;
+    line-height: 1;
+    text-shadow: 0 0 60px rgba(245,237,216,0.08);
+  }
+
+  .time-display .colon {
+    color: var(--gold);
+    animation: blink 1s step-end infinite;
+  }
+
+  .date-display {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  .hijri-display {
+    font-family: 'Amiri', serif;
+    font-size: 1rem;
+    color: var(--gold);
+    margin-top: 3px;
+    opacity: 0.8;
+  }
+
+  /* Info row */
+  .info-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    padding: 12px 0;
+    animation: fadeUp 1s ease 0.2s both;
+  }
+
+  .info-card {
+    background: var(--dark2);
+    border: 1px solid rgba(201,168,76,0.12);
+    border-radius: 4px;
+    padding: 12px 14px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .info-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.3;
+  }
+
+  .info-label {
+    font-size: 0.55rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .info-value {
+    font-size: 1.1rem;
+    color: var(--cream);
+    font-weight: 300;
+  }
+
+  .info-sub {
+    font-size: 0.6rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Weather icon */
+  .weather-icon {
+    font-size: 1.6rem;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  /* Prayer times */
+  .prayer-section {
+    grid-column: 1 / -1;
+    padding: 8px 0 4px;
+    animation: fadeUp 1s ease 0.3s both;
+  }
+
+  .section-title {
+    font-size: 0.55rem;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(201,168,76,0.15);
+  }
+
+  .prayer-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .prayer-item {
+    background: var(--dark2);
+    border: 1px solid rgba(201,168,76,0.08);
+    border-radius: 4px;
+    padding: 10px 8px;
+    text-align: center;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .prayer-item.active {
+    border-color: var(--gold);
+    background: var(--dark3);
+    box-shadow: 0 0 20px rgba(201,168,76,0.1);
+  }
+
+  .prayer-item.active::after {
+    content: '▶';
+    position: absolute;
+    top: -8px; left: 50%;
+    transform: translateX(-50%) rotate(90deg);
+    font-size: 8px;
+    color: var(--gold);
+  }
+
+  .prayer-name {
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .prayer-item.active .prayer-name {
+    color: var(--gold-light);
+  }
+
+  .prayer-time {
+    font-size: 0.95rem;
+    color: var(--cream);
+    font-weight: 300;
+  }
+
+  /* Ayat / Quotes */
+  .ayat-section {
+    grid-column: 1 / -1;
+    background: var(--dark2);
+    border: 1px solid rgba(201,168,76,0.1);
+    border-radius: 4px;
+    padding: 16px 20px;
+    margin-top: 8px;
+    text-align: center;
+    animation: fadeUp 1s ease 0.4s both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ayat-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.4;
+  }
+
+  .ayat-arabic {
+    font-family: 'Amiri', serif;
+    font-size: 1.4rem;
+    color: var(--gold-light);
+    line-height: 1.8;
+    direction: rtl;
+    margin-bottom: 8px;
+    text-shadow: 0 0 20px rgba(201,168,76,0.2);
+  }
+
+  .ayat-trans {
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .ayat-source {
+    font-size: 0.55rem;
+    color: var(--gold);
+    letter-spacing: 3px;
+    margin-top: 6px;
+    opacity: 0.7;
+  }
+
+  /* Next prayer countdown */
+  .next-prayer {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0 4px;
+    animation: fadeIn 1.5s ease both;
+  }
+
+  .next-label {
+    font-size: 0.55rem;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .next-countdown {
+    font-size: 0.8rem;
+    color: var(--gold);
+    font-weight: 400;
+  }
+
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  /* Weather loading */
+  .loading { color: var(--muted); font-size: 0.7rem; }
+
+  /* Responsive for tablet */
+  @media (max-width: 768px) {
+    .time-display { font-size: 4rem; }
+    .bismillah-text { font-size: 1.8rem; }
+    .prayer-grid { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+    .prayer-time { font-size: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-border"></div>
+<div class="bottom-border"></div>
+
+<!-- Corner ornaments -->
+<div class="corner tl">
+  <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M5 55 L5 5 L55 5" stroke="#C9A84C" stroke-width="1" fill="none"/>
+    <path d="M5 5 L20 20" stroke="#C9A84C" stroke-width="0.5" opacity="0.5"/>
+    <circle cx="5" cy="5" r="2" fill="#C9A84C"/>
+    <circle cx="30" cy="5" r="1" fill="#C9A84C" opacity="0.4"/>
+    <circle cx="5" cy="30" r="1" fill="#C9A84C" opacity="0.4"/>
+  </svg>
+</div>
+<div class="corner tr">
+  <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M5 55 L5 5 L55 5" stroke="#C9A84C" stroke-width="1" fill="none"/>
+    <path d="M5 5 L20 20" stroke="#C9A84C" stroke-width="0.5" opacity="0.5"/>
+    <circle cx="5" cy="5" r="2" fill="#C9A84C"/>
+  </svg>
+</div>
+<div class="corner bl">
+  <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M5 55 L5 5 L55 5" stroke="#C9A84C" stroke-width="1" fill="none"/>
+    <circle cx="5" cy="5" r="2" fill="#C9A84C"/>
+  </svg>
+</div>
+<div class="corner br">
+  <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M5 55 L5 5 L55 5" stroke="#C9A84C" stroke-width="1" fill="none"/>
+    <circle cx="5" cy="5" r="2" fill="#C9A84C"/>
+  </svg>
+</div>
+
+<div class="layout">
+
+  <!-- Bismillah -->
+  <div class="bismillah">
+    <div class="bismillah-text">بِسْمِ اللهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+    <div class="bismillah-latin">Bismillahirrahmanirrahim</div>
+  </div>
+
+  <!-- Divider -->
+  <div class="divider">
+    <div class="divider-line"></div>
+    <div class="divider-diamond"></div>
+    <div class="divider-line"></div>
+  </div>
+
+  <!-- Clock -->
+  <div class="clock-block">
+    <div class="time-display" id="clock">--<span class="colon">:</span>--<span class="colon">:</span>--</div>
+    <div class="date-display" id="date-display">Memuat tanggal...</div>
+    <div class="hijri-display" id="hijri-display">— ١٤٤٦ هـ —</div>
+  </div>
+
+  <!-- Info Row -->
+  <div class="info-row">
+    <div class="info-card">
+      <div class="info-label">Cuaca · Bekasi</div>
+      <div class="weather-icon" id="weather-icon">🌤</div>
+      <div class="info-value" id="weather-temp">— °C</div>
+      <div class="info-sub" id="weather-desc">Memuat...</div>
+    </div>
+    <div class="info-card" style="text-align:center;">
+      <div class="info-label">Hari ini</div>
+      <div class="info-value" id="day-name" style="font-size:1.3rem;">—</div>
+      <div class="info-sub" id="month-year">—</div>
+    </div>
+    <div class="info-card" style="text-align:right;">
+      <div class="info-label">Shalat berikutnya</div>
+      <div class="info-value" id="next-prayer-name">—</div>
+      <div class="info-sub" id="next-prayer-countdown">menghitung...</div>
+    </div>
+  </div>
+
+  <!-- Prayer Times -->
+  <div class="prayer-section">
+    <div class="section-title">Waktu Shalat · Bekasi</div>
+    <div class="prayer-grid" id="prayer-grid">
+      <div class="prayer-item" id="p-subuh">
+        <div class="prayer-name">Subuh</div>
+        <div class="prayer-time" id="t-subuh">--:--</div>
+      </div>
+      <div class="prayer-item" id="p-dzuhur">
+        <div class="prayer-name">Dzuhur</div>
+        <div class="prayer-time" id="t-dzuhur">--:--</div>
+      </div>
+      <div class="prayer-item" id="p-ashar">
+        <div class="prayer-name">Ashar</div>
+        <div class="prayer-time" id="t-ashar">--:--</div>
+      </div>
+      <div class="prayer-item" id="p-maghrib">
+        <div class="prayer-name">Maghrib</div>
+        <div class="prayer-time" id="t-maghrib">--:--</div>
+      </div>
+      <div class="prayer-item" id="p-isya">
+        <div class="prayer-name">Isya</div>
+        <div class="prayer-time" id="t-isya">--:--</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ayat / Quote -->
+  <div class="ayat-section" id="ayat-section">
+    <div class="ayat-arabic" id="ayat-arabic">وَمَن يَتَوَكَّلْ عَلَى اللَّهِ فَهُوَ حَسْبُهُ</div>
+    <div class="ayat-trans" id="ayat-trans">"Dan barangsiapa yang bertawakkal kepada Allah, niscaya Allah akan mencukupkan (keperluan)nya."</div>
+    <div class="ayat-source" id="ayat-source">QS. AT-THALAQ : 3</div>
+  </div>
+
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────────────
+  const LAT = -6.2088;  // Bekasi (dekat Jakarta)
+  const LON = 106.9575;
+  const TIMEZONE = 'Asia/Jakarta';
+
+  // ─── AYAT ROTASI ─────────────────────────────────────────────────
+  const ayatList = [
+    {
+      arabic: 'وَمَن يَتَوَكَّلْ عَلَى اللَّهِ فَهُوَ حَسْبُهُ',
+      trans: '"Dan barangsiapa yang bertawakkal kepada Allah, niscaya Allah akan mencukupkan (keperluan)nya."',
+      source: 'QS. AT-THALAQ : 3'
+    },
+    {
+      arabic: 'إِنَّ مَعَ الْعُسْرِ يُسْرًا',
+      trans: '"Sesungguhnya bersama kesulitan ada kemudahan."',
+      source: 'QS. AL-INSYIRAH : 6'
+    },
+    {
+      arabic: 'وَلَا تَهِنُوا وَلَا تَحْزَنُوا وَأَنتُمُ الْأَعْلَوْنَ',
+      trans: '"Janganlah kamu bersikap lemah, dan janganlah (pula) kamu bersedih hati, padahal kamulah orang-orang yang paling tinggi (derajatnya)."',
+      source: 'QS. ALI IMRAN : 139'
+    },
+    {
+      arabic: 'فَاذْكُرُونِي أَذْكُرْكُمْ',
+      trans: '"Karena itu, ingatlah kamu kepada-Ku niscaya Aku ingat (pula) kepadamu."',
+      source: 'QS. AL-BAQARAH : 152'
+    },
+    {
+      arabic: 'إِنَّ اللَّهَ مَعَ الصَّابِرِينَ',
+      trans: '"Sesungguhnya Allah bersama orang-orang yang sabar."',
+      source: 'QS. AL-BAQARAH : 153'
+    },
+    {
+      arabic: 'حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ',
+      trans: '"Cukuplah Allah menjadi Penolong kami dan Allah adalah sebaik-baik Pelindung."',
+      source: 'QS. ALI IMRAN : 173'
+    }
+  ];
+
+  let currentAyat = 0;
+
+  function rotateAyat() {
+    currentAyat = (currentAyat + 1) % ayatList.length;
+    const a = ayatList[currentAyat];
+    const section = document.getElementById('ayat-section');
+    section.style.opacity = '0';
+    section.style.transition = 'opacity 0.8s ease';
+    setTimeout(() => {
+      document.getElementById('ayat-arabic').textContent = a.arabic;
+      document.getElementById('ayat-trans').textContent = a.trans;
+      document.getElementById('ayat-source').textContent = a.source;
+      section.style.opacity = '1';
+    }, 800);
+  }
+
+  // Rotate every 30 seconds
+  setInterval(rotateAyat, 30000);
+
+  // ─── CLOCK ────────────────────────────────────────────────────────
+  const DAYS_ID = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+  function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2,'0');
+    const m = String(now.getMinutes()).padStart(2,'0');
+    const s = String(now.getSeconds()).padStart(2,'0');
+
+    document.getElementById('clock').innerHTML =
+      `${h}<span class="colon">:</span>${m}<span class="colon">:</span>${s}`;
+
+    const dayName = DAYS_ID[now.getDay()];
+    const date = now.getDate();
+    const month = MONTHS_ID[now.getMonth()];
+    const year = now.getFullYear();
+
+    document.getElementById('date-display').textContent =
+      `${dayName}, ${date} ${month} ${year}`;
+    document.getElementById('day-name').textContent = dayName;
+    document.getElementById('month-year').textContent = `${month} ${year}`;
+
+    updatePrayerCountdown(now);
+  }
+
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ─── PRAYER TIMES (via aladhan.com API) ─────────────────────────
+  const prayerKeys = ['Subuh','Dzuhur','Ashar','Maghrib','Isya'];
+  const prayerApiKeys = ['Fajr','Dhuhr','Asr','Maghrib','Isha'];
+  const prayerIds = ['subuh','dzuhur','ashar','maghrib','isya'];
+  let prayerTimes = {};
+
+  async function fetchPrayerTimes() {
+    try {
+      const now = new Date();
+      const d = now.getDate();
+      const mo = now.getMonth() + 1;
+      const y = now.getFullYear();
+      const url = `https://api.aladhan.com/v1/timings/${d}-${mo}-${y}?latitude=${LAT}&longitude=${LON}&method=11`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const timings = data.data.timings;
+
+      // Hijri date
+      const hijri = data.data.date.hijri;
+      document.getElementById('hijri-display').textContent =
+        `— ${hijri.day} ${hijri.month.ar} ${hijri.year} هـ —`;
+
+      prayerApiKeys.forEach((key, i) => {
+        const t = timings[key].substring(0,5);
+        prayerTimes[prayerIds[i]] = t;
+        document.getElementById(`t-${prayerIds[i]}`).textContent = t;
+      });
+
+      updateActivePrayer();
+    } catch(e) {
+      console.log('Prayer API error:', e);
+    }
+  }
+
+  function timeToMinutes(timeStr) {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function updateActivePrayer() {
+    const now = new Date();
+    const currentMin = now.getHours() * 60 + now.getMinutes();
+
+    // Remove all active
+    prayerIds.forEach(id => document.getElementById(`p-${id}`).classList.remove('active'));
+
+    // Find current & next
+    const times = prayerIds.map(id => ({id, min: timeToMinutes(prayerTimes[id] || '00:00')}));
+    let activeIdx = -1;
+
+    for (let i = times.length - 1; i >= 0; i--) {
+      if (currentMin >= times[i].min) {
+        activeIdx = i;
+        break;
+      }
+    }
+
+    if (activeIdx >= 0) {
+      document.getElementById(`p-${times[activeIdx].id}`).classList.add('active');
+    }
+
+    // Next prayer
+    const nextIdx = activeIdx < times.length - 1 ? activeIdx + 1 : 0;
+    const nextId = times[nextIdx].id;
+    const nextName = prayerKeys[nextIdx];
+    document.getElementById('next-prayer-name').textContent = nextName;
+
+    // Store next for countdown
+    window._nextPrayerMin = times[nextIdx].min;
+    window._nextPrayerName = nextName;
+    if (nextIdx === 0 && activeIdx === times.length - 1) {
+      window._nextPrayerMin += 24 * 60; // next day subuh
+    }
+  }
+
+  function updatePrayerCountdown(now) {
+    if (!window._nextPrayerMin) return;
+    const currentMin = now.getHours() * 60 + now.getMinutes();
+    let diff = window._nextPrayerMin - currentMin;
+    if (diff < 0) diff += 24 * 60;
+
+    const h = Math.floor(diff / 60);
+    const m = diff % 60;
+
+    let countdownText = '';
+    if (h > 0) countdownText = `${h} jam ${m} menit lagi`;
+    else countdownText = `${m} menit lagi`;
+
+    document.getElementById('next-prayer-countdown').textContent = countdownText;
+  }
+
+  fetchPrayerTimes();
+  // Refresh prayer times every hour
+  setInterval(fetchPrayerTimes, 3600000);
+  // Update active prayer every minute
+  setInterval(updateActivePrayer, 60000);
+
+  // ─── WEATHER (Open-Meteo, no API key needed) ─────────────────────
+  const weatherCodes = {
+    0: ['☀️','Cerah'],
+    1: ['🌤','Cerah Berawan'],
+    2: ['⛅','Berawan Sebagian'],
+    3: ['☁️','Mendung'],
+    45: ['🌫','Berkabut'],
+    48: ['🌫','Berkabut Beku'],
+    51: ['🌦','Gerimis Ringan'],
+    61: ['🌧','Hujan Ringan'],
+    63: ['🌧','Hujan Sedang'],
+    65: ['🌧','Hujan Lebat'],
+    80: ['🌦','Hujan Lokal'],
+    81: ['🌧','Hujan Sedang'],
+    95: ['⛈','Hujan Petir'],
+  };
+
+  async function fetchWeather() {
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weathercode&timezone=${TIMEZONE}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const temp = Math.round(data.current.temperature_2m);
+      const code = data.current.weathercode;
+      const [icon, desc] = weatherCodes[code] || ['🌡','Tidak diketahui'];
+
+      document.getElementById('weather-icon').textContent = icon;
+      document.getElementById('weather-temp').textContent = `${temp} °C`;
+      document.getElementById('weather-desc').textContent = desc;
+    } catch(e) {
+      document.getElementById('weather-desc').textContent = 'Gagal memuat';
+    }
+  }
+
+  fetchWeather();
+  setInterval(fetchWeather, 600000); // Refresh every 10 min
+
+  // ─── KEEP SCREEN AWAKE (Fullscreen hint) ─────────────────────────
+  document.addEventListener('click', () => {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    }
+  });
+
+  // ─── AUDIO CONTEXT ────────────────────────────────────────────────
+  let audioCtx = null;
+  let audioUnlocked = false;
+
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+
+  // Unlock audio on first user interaction
+  document.addEventListener('click', () => {
+    if (!audioUnlocked) {
+      const ctx = getAudioCtx();
+      // Play silent buffer to unlock
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+      audioUnlocked = true;
+      // Hide unlock hint
+      const hint = document.getElementById('audio-hint');
+      if (hint) hint.style.display = 'none';
+    }
+  }, { once: false });
+
+  // Chime: 3 gentle bell tones (Web Audio API, no MP3 needed)
+  function playChime(isMain = true) {
+    const ctx = getAudioCtx();
+    const notes = isMain
+      ? [523.25, 659.25, 783.99, 1046.5]   // C5 E5 G5 C6 — full shalat chime
+      : [523.25, 659.25];                    // C5 E5 — short reminder chime
+
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.45);
+
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.45);
+      gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + i * 0.45 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.45 + 1.2);
+
+      osc.start(ctx.currentTime + i * 0.45);
+      osc.stop(ctx.currentTime + i * 0.45 + 1.3);
+    });
+  }
+
+  // ─── PRAYER NOTIFICATION POPUP ────────────────────────────────────
+  function showPrayerAlert(prayerName, isReminder = false) {
+    const popup = document.getElementById('prayer-popup');
+    const popupTitle = document.getElementById('popup-title');
+    const popupSub = document.getElementById('popup-sub');
+
+    if (isReminder) {
+      popupTitle.textContent = `⏰ ${prayerName} — 10 Menit Lagi`;
+      popupSub.textContent = 'Bersiaplah untuk menunaikan shalat';
+    } else {
+      popupTitle.textContent = `🕌 Waktu ${prayerName}`;
+      popupSub.textContent = 'Allahu Akbar — Hayya \'alas Shalah';
+    }
+
+    popup.classList.add('show');
+    setTimeout(() => popup.classList.remove('show'), isReminder ? 6000 : 10000);
+  }
+
+  // ─── PRAYER TIME CHECKER ──────────────────────────────────────────
+  let notifiedPrayers = {};   // track fired notifications per day
+  let reminderFired = {};
+
+  function checkPrayerAlert() {
+    if (Object.keys(prayerTimes).length === 0) return;
+
+    const now = new Date();
+    const todayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+    const currentMin = now.getHours() * 60 + now.getMinutes();
+
+    prayerIds.forEach((id, i) => {
+      const pMin = timeToMinutes(prayerTimes[id] || '00:00');
+      const notifKey = `${todayKey}-${id}`;
+      const reminderKey = `${todayKey}-${id}-reminder`;
+
+      // Main notification — exact minute
+      if (currentMin === pMin && !notifiedPrayers[notifKey]) {
+        notifiedPrayers[notifKey] = true;
+        if (audioUnlocked) playChime(true);
+        showPrayerAlert(prayerKeys[i], false);
+      }
+
+      // 10-minute reminder
+      if (currentMin === pMin - 10 && !reminderFired[reminderKey]) {
+        reminderFired[reminderKey] = true;
+        if (audioUnlocked) playChime(false);
+        showPrayerAlert(prayerKeys[i], true);
+      }
+    });
+  }
+
+  // Check every 30 seconds
+  setInterval(checkPrayerAlert, 30000);
+</script>
+
+<!-- Audio unlock hint -->
+<div id="audio-hint" style="
+  position: fixed;
+  bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: rgba(201,168,76,0.15);
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 4px;
+  padding: 8px 20px;
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #C9A84C;
+  z-index: 999;
+  animation: fadeIn 2s ease 1s both;
+">👆 Tap layar sekali untuk aktifkan notif suara</div>
+
+<!-- Prayer Popup -->
+<div id="prayer-popup" style="
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  background: #1A1812;
+  border: 1px solid #C9A84C;
+  border-radius: 8px;
+  padding: 30px 40px;
+  text-align: center;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 60px rgba(201,168,76,0.2), 0 0 120px rgba(201,168,76,0.05);
+  min-width: 280px;
+">
+  <div style="font-family:'Amiri',serif; font-size:1.8rem; color:#C9A84C; margin-bottom:8px;">الله أكبر</div>
+  <div id="popup-title" style="font-size:0.9rem; color:#F5EDD8; letter-spacing:2px; margin-bottom:6px;">Waktu Shalat</div>
+  <div id="popup-sub" style="font-size:0.6rem; color:#7A7060; letter-spacing:2px; text-transform:uppercase;"></div>
+</div>
+
+<style>
+#prayer-popup.show {
+  opacity: 1 !important;
+  transform: translate(-50%, -50%) scale(1) !important;
+  pointer-events: auto !important;
+}
+</style>
+
+</body>
+</html>
